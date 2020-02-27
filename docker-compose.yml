@@ -1,0 +1,71 @@
+version: '2.3'
+
+services:
+   aqua-db:
+     image: registry.aquasec.com/database:4.6
+     ports:
+       - 5432:5432
+     volumes:
+       - ./aqua-db-data:/var/lib/postgresql/data
+     restart: always
+     environment:
+       POSTGRES_PASSWORD: p0stgrespwd
+
+   aqua-console:
+     depends_on:
+       - aqua-db
+     image: registry.aquasec.com/console:4.6
+     ports:
+       - 8080:8080
+       - 443:8443
+     restart: always
+     environment:
+       SCALOCK_DBHOST: aqua-db
+       SCALOCK_DBNAME: scalock
+       SCALOCK_DBUSER: postgres
+       SCALOCK_DBPASSWORD: p0stgrespwd
+       SCALOCK_AUDIT_DBHOST: aqua-db
+       SCALOCK_AUDIT_DBNAME: slk_audit
+       SCALOCK_AUDIT_DBUSER: postgres
+       SCALOCK_AUDIT_DBPASSWORD: p0stgrespwd
+
+   aqua-gateway:
+     depends_on:
+       - aqua-db
+       - aqua-console
+     image: registry.aquasec.com/gateway:4.6
+     ports:
+       - 3622:3622
+       - 8443:8443
+     restart: always
+     environment:
+       AQUA_CONSOLE_SECURE_ADDRESS: aqua-console:8443
+       SCALOCK_DBHOST: aqua-db
+       SCALOCK_DBNAME: scalock
+       SCALOCK_DBUSER: postgres
+       SCALOCK_DBPASSWORD: p0stgrespwd
+       SCALOCK_AUDIT_DBHOST: aqua-db
+       SCALOCK_AUDIT_DBNAME: slk_audit
+       SCALOCK_AUDIT_DBUSER: postgres
+       SCALOCK_AUDIT_DBPASSWORD: p0stgrespwd
+
+   aqua-enforcer:
+     depends_on:
+       - aqua-db
+       - aqua-console
+       - aqua-gateway
+     image: registry.aquasec.com/enforcer:4.6
+     volumes:
+       - /var/run:/var/run
+       - /dev:/dev
+       - /opt/aquasec:/host/opt/aquasec:ro
+       - /opt/aquasec/tmp:/opt/aquasec/tmp
+       - /opt/aquasec/audit:/opt/aquasec/audit
+       - /proc:/host/proc:ro
+       - /sys:/host/sys:ro
+       - /etc:/host/etc:ro
+     restart: always
+     environment:
+       AQUA_TOKEN: c3a34079-d2c1-4c86-b606-70ca62329969
+       AQUA_SERVER: aqua-gateway:8443
+       AQUA_LOGICAL_NAME: "Default"
