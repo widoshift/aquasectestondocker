@@ -69,3 +69,16 @@ services:
        AQUA_TOKEN: c3a34079-d2c1-4c86-b606-70ca62329969
        AQUA_SERVER: aqua-gateway:8443
        AQUA_LOGICAL_NAME: "Default"
+
+   aqua-scanner:
+     depends_on:
+       - aqua-db
+       - aqua-console
+       - aqua-gateway
+     image: registry.aquasec.com/aquasec/scanner:4.6
+     command: daemon --user scanner --password sc4nnerpwd --host http://192.168.122.41:8080
+     volumes:
+       - /var/run/docker.sock:/var/run/docker.sock
+     restart: always
+     environment:
+       AQUA_SCANNER_LOGICAL_NAME: testaquascan
